@@ -1,0 +1,190 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL_ORM")
+  directUrl = env("DATABASE_URL_DIRECT")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id                     String              @id @default(uuid())
+  authId                 String              @unique
+  email                  String              @unique
+  firstName              String
+  lastName               String?
+  phoneNumber            String?
+  avatar                 String?
+  googleAuthToken        String?
+  googleAuthRefreshToken String?
+  googleUserId           String?
+  createdProjects        Project[]           @relation("CreatedByUser")
+  editedProjects         Project[]           @relation("LastEditedByUser")
+  projectTeams           ProjectTeamMember[]
+  createdAt              DateTime            @default(now())
+  updatedAt              DateTime            @updatedAt
+  createdDiagram         Diagram[]           @relation("CreatedByUser")
+  editedDiagram          Diagram[]           @relation("LastEditedByUser")
+  aiHelperId      String[]
+}
+
+model ProjectTeamMember {
+  id            String      @id @default(uuid())
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String
+  projectTeam   ProjectTeam @relation(fields: [projectTeamId], references: [id], onDelete: Cascade)
+  projectTeamId String
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@unique([userId, projectTeamId], name: "UserOnProjectTeam_userId_projectTeamId_unique")
+}
+
+model ProjectTeam {
+  id        String              @id @default(uuid())
+  project   Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String
+  members   ProjectTeamMember[]
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+}
+
+model Project {
+  id                String              @id @default(uuid())
+  name              String
+  creator           User                @relation("CreatedByUser", fields: [creatorId], references: [id])
+  creatorId         String
+  lastEditor        User                @relation("LastEditedByUser", fields: [lastEditorId], references: [id])
+  lastEditorId      String
+  diagrams          Diagram[]
+  projectTeams      ProjectTeam[]
+  spreadsheets      Spreadsheet[]
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  footprintSQLQuery FootprintSQLQuery[]
+}
+
+model Diagram {
+  id                      String                    @id @default(uuid())
+  name                    String
+  elements                Json?
+  project                 Project                   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId               String
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
+  creator                 User?                     @relation("CreatedByUser", fields: [creatorId], references: [id])
+  creatorId               String?
+  lastEditor              User?                     @relation("LastEditedByUser", fields: [lastEditorId], references: [id])
+  lastEditorId            String?
+  ExecutionGridProperties ExecutionGridProperties[]
+  DiagramEditorSettings   DiagramEditorSettings?
+  FootprintSQLQuery       FootprintSQLQuery[]
+}
+
+model Spreadsheet {
+  id        String              @id @default(uuid())
+  createdAt DateTime            @default(now())
+  name      String
+  columns   SpreadsheetColumn[]
+  rows      SpreadsheetRow[]
+  Project   Project?            @relation(fields: [projectId], references: [id])
+  projectId String?
+}
+
+model SpreadsheetColumn {
+  id      String             @id @default(uuid())
+  name    String
+  sheet   Spreadsheet        @relation(fields: [sheetId], references: [id], onDelete: Cascade)
+  sheetId String
+  Value   SpreadsheetValue[]
+}
+
+model SpreadsheetRow {
+  id       String             @id @default(uuid())
+  values   SpreadsheetValue[]
+  rowIndex Int?
+  sheet    Spreadsheet        @relation(fields: [sheetId], references: [id], onDelete: Cascade)
+  sheetId  String
+}
+
+model SpreadsheetValue {
+  id          String             @id @default(uuid())
+  columnId    String?
+  rowId       String
+  content     String
+  merge       Json?
+  columnIndex Int?
+  column      SpreadsheetColumn? @relation(fields: [columnId], references: [id], onDelete: Cascade)
+  row         SpreadsheetRow     @relation(fields: [rowId], references: [id], onDelete: Cascade)
+  createdAt   DateTime           @default(now())
+
+  @@unique([columnId, rowId], name: "SpreadsheetValue_columnId_rowId_unique")
+}
+
+model ExecutionGridProperties {
+  id                      String   @id @default(uuid())
+  diagramId               String   @unique
+  diagram                 Diagram  @relation(fields: [diagramId], references: [id], onDelete: Cascade)
+  gridColor               String?
+  xAxisTitle              String?
+  isShowVerticalGridLines Boolean?
+}
+
+model DiagramEditorSettings {
+  id            String          @id @default(uuid())
+  diagramId     String          @unique
+  diagram       Diagram         @relation(fields: [diagramId], references: [id], onDelete: Cascade)
+  DiagramLayers DiagramLayers[]
+}
+
+model DiagramLayers {
+  id                      String                @id @default(uuid())
+  name                    String
+  diagramEditorSettingsId String
+  visible                 Boolean
+  isSelected              Boolean
+  diagramEditorSettings   DiagramEditorSettings @relation(fields: [diagramEditorSettingsId], references: [id], onDelete: Cascade)
+}
+
+model FootprintSQLQuery {
+  id               String             @id @default(uuid())
+  sqlQuery         String             @unique
+  diagramId        String?
+  diagram          Diagram?           @relation(fields: [diagramId], references: [id], onDelete: Cascade)
+  createdAt        DateTime           @default(now())
+  lastUpdatedAt    DateTime           @default(now())
+  result           Json?
+  footpeintRequest FootprintRequest[]
+  Project          Project?           @relation(fields: [projectId], references: [id])
+  projectId        String?
+}
+
+model FootprintRequest {
+  id                  String             @id @default(uuid())
+  footprintSQLQueryId String
+  executionId         String
+  lastRequestedAt     DateTime?
+  FootprintSQLQuery   FootprintSQLQuery? @relation(fields: [footprintSQLQueryId], references: [id])
+  createdAt           DateTime           @default(now())
+}
+
+model AiHelperMessage {
+  id               String             @id @default(uuid())
+  content          String 
+  aiHelperId         String
+  aiHelper           AiHelper @relation(fields: [aiHelperId], references: [id])
+  createdAt        DateTime           @default(now())
+  lastUpdatedAt    DateTime           @default(now())
+}
+
+model AiHelper {
+  id               String             @id @default(uuid())
+  projectId        String
+  messages         AiHelperMessage[]  
+  createdAt        DateTime           @default(now())
+  lastUpdatedAt    DateTime           @default(now())
+}

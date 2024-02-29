@@ -1,0 +1,22 @@
+# my-scenario.yml
+config:
+  target: "http://localhost:8081/api/socket"
+  phases:
+    - duration: 10
+      arrivalRate: 10
+  engines:
+    socketio-v3: {}
+
+scenarios:
+  - name: My sample scenario
+    engine: socketio-v3
+    flow:
+      # wait for the WebSocket upgrade (optional)
+      - think: 1
+
+      # basic emit
+      - emit:
+          channel: "request_diagram"
+          data: "c6aeac72-097a-482c-8610-83a052635c06"
+      # do nothing for 30 seconds then disconnect
+      - think: 5

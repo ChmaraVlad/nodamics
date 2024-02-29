@@ -1,0 +1,17 @@
+export enum ELinks {
+    main = '/',
+    home = '/home',
+    login = '/login',
+    register = '/register',
+    verificationLink = '/auth/verify-email',
+    forgotPassword = '/auth/reset-password',
+    authGoogle = '/auth/callback/google',
+    accountManageData = '/account',
+    accountProfile = '/account/profile',
+    accountBilling = '/account/billing',
+    accountNFT = '/account/NFT',
+    accountSettings = '/account/settings',
+    project = '/project',
+    diagram = '/diagram',
+    team = '/team',
+}

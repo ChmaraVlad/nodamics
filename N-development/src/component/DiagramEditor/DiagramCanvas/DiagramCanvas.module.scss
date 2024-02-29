@@ -1,0 +1,11 @@
+.canvasContainer {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.backgroundContainer {
+  circle {
+    fill: #4E4E4E;
+  }
+}
